@@ -28,7 +28,14 @@ Replace the connection string with your local or Atlas connection string.
 
 6. **Run the Project**: In the terminal, navigate to the project directory and run `node index.js` to start the application.
 
-Alternatively you can run the tests by typing `npm run test`
+Alternatively, you can run the tests by typing `npm run test`
+
+### Typescript 
+
+This project uses Typescript and the Typescript compiler.
+You can use npm to install TypeScript globally, this means that you can use the `tsc` command anywhere in your terminal.
+
+To do this, run npm install -g typescript
 
 ## Acknowledgements
 
