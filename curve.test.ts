@@ -1,36 +1,19 @@
 import mongoose from "mongoose";
-import Track from "./models/Tracks.js";
 import Contract from "./models/Contracts.js";
+import Track from "./models/Tracks.js";
 import "dotenv/config";
-import { assert, expect } from "chai";
+import { assert } from "chai";
 import { readExcelFile } from "./readExcel.js";
 import { describe } from "node:test";
-import { read } from "node:fs";
+import { ingestData } from "./index.js";
 
 before(async () => {
   if (!process.env.MONGODB_URL) {
     throw new Error("MONGODB_URL is not defined in the .env file");
   }
   await mongoose.connect(process.env.MONGODB_URL);
-}); //In a scenario outside of the test I would make sure that the DB used was a test one, of course I would not delete everything off the database.
-//for the sake of the test I do delete all the data from the DB.
-after(async () => {
-  await Track.deleteMany({});
-  await Contract.deleteMany({});
-  console.log("Track & Contract collection cleared");
 });
 
-describe("Database Connection", () => {
-  it("should connect to the database successfully", (done) => {
-    if (!process.env.MONGODB_URL) {
-      throw new Error("MONGODB_URL is not defined in the .env file");
-    }
-    mongoose.connect(process.env.MONGODB_URL).then(() => {
-      assert(mongoose.connection.readyState === 1);
-      done();
-    });
-  });
-});
 
 describe("Contract", () => {
   it("should receive a new contract and add it to the DB", (done) => {
@@ -67,4 +50,64 @@ describe("readExcelFile", () => {
     const jsonData = await readExcelFile("not a valid path");
     assert(jsonData === "This path is incorrect or does not exist!");
   });
+});
+
+describe("Track", () => {
+  it("should fail to create a track with missing required fields", (done) => {
+    const track = new Track({
+      title: "Test Title",
+      // missing version, artist, and other required fields
+    });
+    track.save().catch((err) => {
+      assert(err._message === "Track validation failed");
+      done();
+    });
+  });
+  it("should return a confirmation message when all tracks are digested without errors", async () => {
+    {
+      const fakeCorrectData = [
+        {
+          Title: "Track 3",
+          Version: "Version 3",
+          Artist: "Artist 3",
+          ISRC: "ISRC2",
+          "P Line": "P Line 2",
+          Aliases: "aliases11 ; aliases22",
+          Contract: "Contract 1",
+        },
+      ];
+      const response = await ingestData(fakeCorrectData);
+      assert(response === "All tracks ingested successfully.");
+    }
+  });
+
+  it("should return a confirmation message when tracks without contract are digested", (done) => {
+    {
+      const fakeDatawithNullContract = [
+        {
+          Title: "Track 3",
+          Version: "Version 3",
+          Artist: "Artist 3",
+          ISRC: "ISRC2",
+          "P Line": "P Line 2",
+          Aliases: "aliases11 ; aliases22",
+          Contract: null,
+        },
+      ];
+      ingestData(fakeDatawithNullContract).then((res) => {
+        assert(res === "All tracks ingested successfully.");
+        done();
+      });
+    }
+  });
+});
+
+//In a scenario outside of the test I would make sure that the DB used was a test one, of course I would not delete everything off the database.
+//for the sake of this assignment, after all the tests I do delete all the data from the DB .
+
+
+after(async () => {
+  await Track.deleteMany({});
+  await Contract.deleteMany({});
+  console.log("Track & Contract collection cleared");
 });
