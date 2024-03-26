@@ -3,6 +3,9 @@ import Track from "./models/Tracks.js";
 import Contract from "./models/Contracts.js";
 import "dotenv/config";
 import { assert, expect } from "chai";
+import { readExcelFile } from "./readExcel.js";
+import { describe } from "node:test";
+import { read } from "node:fs";
 
 before(async () => {
   if (!process.env.MONGODB_URL) {
@@ -38,5 +41,30 @@ describe("Contract", () => {
         done();
       });
     });
+  });
+});
+
+describe("readExcelFile", () => {
+  it("Should receive an array of objects with the Json data from an excel file", async () => {
+    interface ExcelData {
+      ID?: string;
+      ISRC?: string;
+      Aliases?: string;
+      Contract?: string;
+      Title?: string;
+      Version?: string;
+      Artist?: string;
+      "P Line"?: string;
+    }
+    const jsonData: ExcelData[] = (await readExcelFile(
+      `./details/Track Import Test.xlsx`
+    )) as ExcelData[];
+    assert(typeof jsonData === "object");
+    assert(jsonData[1].Title === "Track 1");
+    assert(jsonData[1].Version === "Version 1");
+  });
+  it("Should return a string when the path is not an existing one", async () => {
+    const jsonData = await readExcelFile("not a valid path");
+    assert(jsonData === "This path is incorrect or does not exist!");
   });
 });

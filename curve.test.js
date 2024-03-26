@@ -12,9 +12,11 @@ import Track from "./models/Tracks.js";
 import Contract from "./models/Contracts.js";
 import "dotenv/config";
 import { assert } from "chai";
+import { readExcelFile } from "./readExcel.js";
+import { describe } from "node:test";
 before(() => __awaiter(void 0, void 0, void 0, function* () {
     if (!process.env.MONGODB_URL) {
-        throw new Error("MONGODB_URL environment variable is not set");
+        throw new Error("MONGODB_URL is not defined in the .env file");
     }
     yield mongoose.connect(process.env.MONGODB_URL);
 })); //In a scenario outside of the test I would make sure that the DB used was a test one, of course I would not delete everything off the database.
@@ -26,11 +28,10 @@ after(() => __awaiter(void 0, void 0, void 0, function* () {
 }));
 describe("Database Connection", () => {
     it("should connect to the database successfully", (done) => {
-        const mongoDbUrl = process.env.MONGODB_URL;
-        if (!mongoDbUrl) {
+        if (!process.env.MONGODB_URL) {
             throw new Error("MONGODB_URL is not defined in the .env file");
         }
-        mongoose.connect(mongoDbUrl).then(() => {
+        mongoose.connect(process.env.MONGODB_URL).then(() => {
             assert(mongoose.connection.readyState === 1);
             done();
         });
@@ -46,4 +47,16 @@ describe("Contract", () => {
             });
         });
     });
+});
+describe("readExcelFile", () => {
+    it("Should receive an array of objects with the Json data from an excel file", () => __awaiter(void 0, void 0, void 0, function* () {
+        const jsonData = (yield readExcelFile(`./details/Track Import Test.xlsx`));
+        assert(typeof jsonData === "object");
+        assert(jsonData[1].Title === "Track 1");
+        assert(jsonData[1].Version === "Version 1");
+    }));
+    it("Should return a string when the path is not an existing one", () => __awaiter(void 0, void 0, void 0, function* () {
+        const jsonData = yield readExcelFile("not a valid path");
+        assert(jsonData === "This path is incorrect or does not exist!");
+    }));
 });
